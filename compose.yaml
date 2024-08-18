@@ -1,0 +1,40 @@
+services:
+  mysql:
+    image: 'mysql:latest'
+    environment:
+      - 'MYSQL_DATABASE=communication_hub'
+      - 'MYSQL_ROOT_PASSWORD=${DB_PASSWORD}'
+      - 'MYSQL_USER=root'
+    ports:
+      - '3308:3306'  # Исправлено соответствие портов
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: PLAINTEXT://:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://host.docker.internal:9092
+    ports:
+      - '9092:9092'
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - '2181:2181'
+
+  your-app:
+    build: .
+    ports:
+      - '8080:8080'
+    depends_on:
+      - mysql
+      - kafka
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3308/communication_hub  # Исправлено на правильное имя базы данных и порт
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      DB_PASSWORD: ${DB_PASSWORD}  # Убедитесь, что эта переменная окружения установлена
